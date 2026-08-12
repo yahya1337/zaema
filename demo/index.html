@@ -264,8 +264,14 @@ function App() {
 
   return h("main", null,
    h("div", { style: { textAlign: "center", marginBottom: "2rem" } },
-  h("h1", null, "Can You spot Melanoma ?"),
-     h("h1", null, "A Quiz By Dr Zaema"),
+  h("h1", {
+  style: {
+    fontSize: "32px",
+    color: "#7f1d1d",
+    fontWeight: "700",
+    marginBottom: "8px"
+  }
+}, "Can You Spot Melanoma ?"),     h("h1", null, "A Quiz By Dr Zaema"),
   h("p", { className: "lede", style: { margin: "0 auto" } },
     "One dermatoscopic image at a time, Is it melanoma, or an ordinary mole? " +
     "A small neural network answers the same question in your browser, " +
