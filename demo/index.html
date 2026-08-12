@@ -263,12 +263,14 @@ function App() {
   const imageUrl = current ? `${BASE}/images/${current.image_id}.jpg` : "";
 
   return h("main", null,
-    h("h1", null, "Human Against Machine"),
-    h("p", { className: "lede" },
-      "One dermatoscopic image at a time: melanoma, or an ordinary mole? " +
-      "A small neural network answers the same question in your browser, " +
-      "on the same image, at the same moment."),
-
+   h("div", { style: { textAlign: "center", marginBottom: "2rem" } },
+  h("h1", null, "Human Against Machine"),
+  h("p", { className: "lede", style: { margin: "0 auto" } },
+    "One dermatoscopic image at a time: melanoma, or an ordinary mole? " +
+    "A small neural network answers the same question in your browser, " +
+    "on the same image, at the same moment."
+  )
+),
     h("div", { className: "board" },
       h("div", { className: "card" },
         h("img", { ref: imageRef, className: "lesion", src: imageUrl,
