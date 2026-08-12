@@ -263,27 +263,47 @@ function App() {
   const imageUrl = current ? `${BASE}/images/${current.image_id}.jpg` : "";
 
   return h("main", null,
-   h("div", { style: { textAlign: "center", marginBottom: "2rem" } },
-  h("h1", {
+  h("div", {
   style: {
-    fontSize: "32px",
-    color: "#7f1d1d",
-    fontWeight: "700",
-    marginBottom: "8px"
+    textAlign: "center",
+    marginBottom: "2rem"
   }
-}, "Can You Spot Melanoma ?"),   
-  h("h2", {
+},
+
+h("h1", {
   style: {
-    fontSize: "20px",
-    color: "#374151",
-    fontWeight: "600"
+    fontSize: "2.8rem",
+    fontWeight: "800",
+    color: "#16181d",
+    margin: "0 0 .5rem",
+    letterSpacing: "-.02em"
+  }
+},
+  "Can You Spot ",
+  h("span", { style: { color: "#b91c1c" } }, "Melanoma"),
+  " ?"
+),
+
+h("h2", {
+  style: {
+    fontSize: "1.35rem",
+    fontWeight: "700",
+    color: "#16181d",
+    margin: "0 0 .75rem"
   }
 }, "A Quiz By Dr Zaema"),
-     h("p", { className: "lede", style: { margin: "0 auto" } },
-    "One dermatoscopic image at a time, Is it melanoma, or an ordinary mole? " +
-    "A small neural network answers the same question in your browser, " +
-    "on the same image, at the same moment."
-  )
+
+h("p", {
+  className: "lede",
+  style: {
+    margin: "0 auto"
+  }
+},
+  "One dermatoscopic image at a time: melanoma, or an ordinary mole? " +
+  "A small neural network answers the same question in your browser, " +
+  "on the same image, at the same moment."
+)
+
 ),
     h("div", { className: "board" },
       h("div", { className: "card" },
