@@ -79,6 +79,8 @@
   .score-human { color: var(--human); font-weight: 700; }
   .score-machine { color: var(--machine); font-weight: 700; }
   .note { color: var(--muted); font-size: .875rem; }
+  .limitation { margin-top: 0.35rem; padding: .45rem .75rem; border: 1px solid var(--line); border-radius: .5rem; text-align: center; font-size: .75rem; line-height: 1.4; color: var(--ink); }
+  .limitation h3 { margin: 0 0 .2rem; font-size: .8rem; font-weight: 700; }
   .tally {
     margin-top: 1rem; padding: .75rem .9rem; border-radius: .5rem;
     background: #fef2f2; border: 1px solid #fecaca; font-size: .9rem;
@@ -352,14 +354,10 @@ h("p", {
           h("strong", null, ""), " ",
           ""))),
 
-    h("div", { className: "" },
-      h("strong", null, ""),
-      " It is  built from a public research dataset, This is a teaching demonstration , Not a diagnostic tool . The neural network was trained on 1113 defined dermatoscoic images of melanoma. ",
-      "",
-      "",
-      "",
-      "",
-      h("strong", null, "")),
+    h("div", { className: "limitation" },
+      h("h3", null, "Limitation"),
+      "It is built from a public research dataset. This is a teaching demonstration, not a diagnostic tool. The neural network was trained on 1113 defined dermatoscopic images of melanoma."
+    ),
 
     h("footer", null,
       "Images: HAM10000 (Tschandl, Rosendahl & Kittler, 2018), drawn from the ",
