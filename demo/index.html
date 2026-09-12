@@ -32,8 +32,8 @@
     --line: #e5e7eb;
     --paper: #ffffff;
     --wash: #f7f7f8;
-    --human: #2563eb;
-    --machine: #b45309;
+    --human: #b45309;
+    --machine: #2563eb;
     --danger: #b91c1c;
     --ok: #15803d;
   }
@@ -630,7 +630,8 @@ function App() {
           }
         },
 
-        "Make your call, and see how a neural network compares"
+        "one dermatoscopic image at a time , Melanoma or an ordinary mole
+        Make your call, and see how a neural network compares"
       )
     ),
 
@@ -821,7 +822,7 @@ function App() {
             }
           },
 
-          "This Algorithm runs on 1113 known dermatoscopic images from HAM Dataset ",
+          "This Algorithm runs on 1113 known and defined dermatoscopic images from HAM Dataset. ",
 
           h("strong", null, ""),
 
@@ -847,14 +848,16 @@ function App() {
         "Limitation"
       ),
 
-      "It is built from a public research dataset. This is a teaching demonstration, not a diagnostic tool. The neural network was trained on 1113 defined dermatoscopic images of melanoma."
+      "This is a teaching demonstration, not a diagnostic tool.
+Built from a public research dataset, the network misses roughly 1 in 4 melanomas and was trained without ethnicity or Fitzpatrick skin-type data. Models trained on one population mostly underperform on another.
+If you find a lesion concerning, —Please see a dermatologist."
     ),
 
     h(
       "footer",
       null,
 
-      "Images: HAM10000 (Tschandl, Rosendahl & Kittler, 2018), drawn from the ",
+      "A Dermatosco ",
 
       "held-out validation split, so the network never trained on any of them. ",
 
