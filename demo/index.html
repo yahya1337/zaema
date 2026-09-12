@@ -5,24 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Can you tell melanoma from an ordinary mole? A neural network answers alongside you, running entirely in your browser.">
 <title>Human Versus Machine,AI Powered Dermatoscopic quiz</title>
-<!-- Inline so the page makes no request for it; the 404 was harmless but noisy. -->
+
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='11' fill='%23b45309'/><circle cx='13' cy='13' r='4' fill='%2316181d'/></svg>">
 
 <!--
-  The whole demo is this one file plus the exported model. No build step, no
-  server, no framework toolchain: the visitor's browser downloads a 10.7 MB
-  quantised ResNet-18 and runs it locally on a randomly drawn image.
-
-  That matters for honesty. The 2024 version served a CSV of precomputed
-  answers for a fixed set of 100 images, which is indistinguishable from a
-  hand-written lookup table. This runs the real network.
+  The whole demo is this one file plus the exported model.
+  No build step, no server, no framework toolchain.
 -->
 <script type="importmap">
-{ "imports": {
+{
+  "imports": {
     "react": "https://esm.sh/react@18.3.1",
     "react-dom/client": "https://esm.sh/react-dom@18.3.1/client"
-} }
+  }
+}
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
 
 <style>
@@ -38,7 +36,9 @@
     --ok: #15803d;
   }
 
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
 
   body {
     margin: 0;
@@ -156,13 +156,15 @@
     font-variant-numeric: tabular-nums;
   }
 
-  th, td {
+  th,
+  td {
     text-align: left;
     padding: .35rem 0;
     border-bottom: 1px solid var(--line);
   }
 
-  td:last-child, th:last-child {
+  td:last-child,
+  th:last-child {
     text-align: right;
   }
 
@@ -181,7 +183,6 @@
     font-size: .875rem;
   }
 
-  /* Compact Limitation box */
   .limitation {
     margin-top: 5rem;
     padding: .45rem .75rem;
@@ -239,55 +240,92 @@
 </head>
 
 <body>
+
 <div id="root"></div>
 
 <script type="module">
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { createRoot } from "react-dom/client";
+
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback
+} from "react";
+
+import {
+  createRoot
+} from "react-dom/client";
+
 
 const h = React.createElement;
-const BASE = "./public/model";
-const COMMON = { mel: "Melanoma", nv: "Mole (nevus)" };
 
-// ---------------------------------------------------------------------------
-// Preprocessing.
-//
-// This must reproduce the training transform exactly, or the deployed model is
-// not the model that was measured. Training did:
-//
-//     RandomCrop(300, 300) -> Resize(224, 224) -> ToTensor -> Normalize
-//
-// on the 600x450 originals. The served images are resized down for the web, so
-// a 300x300 crop of *those* would cover a different fraction of the lesion and
-// present a scale the network never saw. `source_size` in labels.json records
-// the original dimensions so the crop box can be scaled to match.
-// ---------------------------------------------------------------------------
+
+/*
+  The normal location is:
+
+  demo/public/model/
+
+  We also check a few common alternatives automatically.
+*/
+let BASE = "./public/model";
+
+const COMMON = {
+  mel: "Melanoma",
+  nv: "Mole (nevus)"
+};
+
+
+/* --------------------------------------------------------------------------
+   PREPROCESSING
+   -------------------------------------------------------------------------- */
 
 function preprocess(image, spec, canvas) {
-  const [inW, inH] = spec.input_size;
-  const [srcW, srcH] = spec.source_size ?? [image.naturalWidth, image.naturalHeight];
-  const [cropW, cropH] = spec.crop_size ?? [srcW, srcH];
 
-  // Crop box in served-image pixels, preserving the fraction training used.
+  const [inW, inH] = spec.input_size;
+
+  const [srcW, srcH] =
+    spec.source_size ??
+    [image.naturalWidth, image.naturalHeight];
+
+  const [cropW, cropH] =
+    spec.crop_size ??
+    [srcW, srcH];
+
+
   const boxW = Math.min(
     image.naturalWidth,
     (cropW / srcW) * image.naturalWidth
   );
+
 
   const boxH = Math.min(
     image.naturalHeight,
     (cropH / srcH) * image.naturalHeight
   );
 
-  const x = Math.random() * (image.naturalWidth - boxW);
-  const y = Math.random() * (image.naturalHeight - boxH);
+
+  const x =
+    Math.random() *
+    (image.naturalWidth - boxW);
+
+
+  const y =
+    Math.random() *
+    (image.naturalHeight - boxH);
+
 
   canvas.width = inW;
   canvas.height = inH;
 
-  const context = canvas.getContext("2d", {
-    willReadFrequently: true
-  });
+
+  const context =
+    canvas.getContext(
+      "2d",
+      {
+        willReadFrequently: true
+      }
+    );
+
 
   context.drawImage(
     image,
@@ -301,17 +339,47 @@ function preprocess(image, spec, canvas) {
     inH
   );
 
-  const { data } = context.getImageData(0, 0, inW, inH);
 
-  // NCHW float32, channel-normalised with the ImageNet statistics training used.
-  const tensor = new Float32Array(3 * inW * inH);
+  const {
+    data
+  } =
+    context.getImageData(
+      0,
+      0,
+      inW,
+      inH
+    );
 
-  for (let p = 0, n = inW * inH; p < n; p++) {
-    for (let c = 0; c < 3; c++) {
+
+  const tensor =
+    new Float32Array(
+      3 * inW * inH
+    );
+
+
+  for (
+    let p = 0,
+    n = inW * inH;
+    p < n;
+    p++
+  ) {
+
+    for (
+      let c = 0;
+      c < 3;
+      c++
+    ) {
+
       tensor[c * n + p] =
-        (data[p * 4 + c] / 255 - spec.mean[c]) / spec.std[c];
+        (
+          data[p * 4 + c] / 255
+          - spec.mean[c]
+        )
+        / spec.std[c];
+
     }
   }
+
 
   return new ort.Tensor(
     "float32",
@@ -320,42 +388,112 @@ function preprocess(image, spec, canvas) {
   );
 }
 
+
+/* --------------------------------------------------------------------------
+   SOFTMAX
+   -------------------------------------------------------------------------- */
+
 function softmax(logits) {
-  const top = Math.max(...logits);
-  const exps = logits.map((v) => Math.exp(v - top));
-  const total = exps.reduce((a, b) => a + b, 0);
 
-  return exps.map((v) => v / total);
-}
+  const top =
+    Math.max(...logits);
 
-// The model is asked for several differently cropped views and the results are
-// averaged -- the same test-time augmentation the reported metrics used, where
-// each validation lesion was scored three times and aggregated.
 
-async function classify(session, image, spec, canvas) {
-  const views = spec.views ?? 1;
-  const summed = new Array(spec.classes.length).fill(0);
-
-  for (let v = 0; v < views; v++) {
-    const output = await session.run({
-      image: preprocess(image, spec, canvas)
-    });
-
-    const probabilities = softmax(
-      Array.from(Object.values(output)[0].data)
+  const exps =
+    logits.map(
+      v => Math.exp(v - top)
     );
 
-    probabilities.forEach((p, i) => {
-      summed[i] += p / views;
-    });
+
+  const total =
+    exps.reduce(
+      (a, b) => a + b,
+      0
+    );
+
+
+  return exps.map(
+    v => v / total
+  );
+}
+
+
+/* --------------------------------------------------------------------------
+   CLASSIFICATION
+   -------------------------------------------------------------------------- */
+
+async function classify(
+  session,
+  image,
+  spec,
+  canvas
+) {
+
+  const views =
+    spec.views ?? 1;
+
+
+  const summed =
+    new Array(
+      spec.classes.length
+    ).fill(0);
+
+
+  for (
+    let v = 0;
+    v < views;
+    v++
+  ) {
+
+    const output =
+      await session.run({
+        image:
+          preprocess(
+            image,
+            spec,
+            canvas
+          )
+      });
+
+
+    const probabilities =
+      softmax(
+        Array.from(
+          Object.values(output)[0].data
+        )
+      );
+
+
+    probabilities.forEach(
+      (p, i) => {
+        summed[i] += p / views;
+      }
+    );
   }
+
 
   return summed;
 }
 
-function Scoreboard({ human, machine, rounds }) {
-  const pct = (n) =>
-    (rounds ? `${Math.round((100 * n) / rounds)}%` : "—");
+
+/* --------------------------------------------------------------------------
+   SCOREBOARD
+   -------------------------------------------------------------------------- */
+
+function Scoreboard({
+  human,
+  machine,
+  rounds
+}) {
+
+  const pct =
+    n =>
+      rounds
+        ? `${Math.round(
+            (100 * n) / rounds
+          )}%`
+        : "—";
+
 
   return h(
     "table",
@@ -364,18 +502,35 @@ function Scoreboard({ human, machine, rounds }) {
     h(
       "thead",
       null,
+
       h(
         "tr",
         null,
+
         h(
           "th",
           null,
+
           "After " +
-            rounds +
-            (rounds === 1 ? " lesion" : " lesions")
+          rounds +
+          (
+            rounds === 1
+              ? " lesion"
+              : " lesions"
+          )
         ),
-        h("th", null, "Correct"),
-        h("th", null, "Rate")
+
+        h(
+          "th",
+          null,
+          "Correct"
+        ),
+
+        h(
+          "th",
+          null,
+          "Rate"
+        )
       )
     ),
 
@@ -386,374 +541,937 @@ function Scoreboard({ human, machine, rounds }) {
       h(
         "tr",
         null,
+
         h(
           "td",
-          { className: "score-human" },
+          {
+            className:
+              "score-human"
+          },
           "You"
         ),
-        h("td", null, human),
-        h("td", null, pct(human))
+
+        h(
+          "td",
+          null,
+          human
+        ),
+
+        h(
+          "td",
+          null,
+          pct(human)
+        )
       ),
 
       h(
         "tr",
         null,
+
         h(
           "td",
-          { className: "score-machine" },
+          {
+            className:
+              "score-machine"
+          },
           "Machine"
         ),
-        h("td", null, machine),
-        h("td", null, pct(machine))
+
+        h(
+          "td",
+          null,
+          machine
+        ),
+
+        h(
+          "td",
+          null,
+          pct(machine)
+        )
       )
     )
   );
 }
 
+
+/* --------------------------------------------------------------------------
+   MAIN APP
+   -------------------------------------------------------------------------- */
+
 function App() {
-  const [status, setStatus] = useState("Loading model…");
-  const [pool, setPool] = useState(null);
-  const [spec, setSpec] = useState(null);
-  const [current, setCurrent] = useState(null);
-  const [answer, setAnswer] = useState(null);
 
-  const [score, setScore] = useState({
-    human: 0,
-    machine: 0,
-    rounds: 0
-  });
+  const [
+    status,
+    setStatus
+  ] =
+    useState(
+      "Loading model…"
+    );
 
-  const [missed, setMissed] = useState({
-    human: 0,
-    machine: 0,
-    melanomas: 0
-  });
 
-  const session = useRef(null);
-  const canvas = useRef(document.createElement("canvas"));
-  const imageRef = useRef(null);
+  const [
+    pool,
+    setPool
+  ] =
+    useState(null);
 
-  // A shuffled deck rather than an independent random draw each round.
-  const deck = useRef([]);
 
-  const draw = useCallback((images) => {
-    if (deck.current.length === 0) {
-      deck.current = [...images];
+  const [
+    spec,
+    setSpec
+  ] =
+    useState(null);
 
-      for (let i = deck.current.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
 
-        [
-          deck.current[i],
-          deck.current[j]
-        ] = [
-          deck.current[j],
-          deck.current[i]
-        ];
-      }
-    }
+  const [
+    current,
+    setCurrent
+  ] =
+    useState(null);
 
-    return deck.current.pop();
-  }, []);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [labels, poolData] = await Promise.all([
-          fetch(`${BASE}/labels.json`).then((r) => r.json()),
-          fetch(`${BASE}/pool.json`).then((r) => r.json()),
-        ]);
+  const [
+    answer,
+    setAnswer
+  ] =
+    useState(null);
 
-        setSpec(labels);
-        setPool(poolData);
 
-        setStatus("Downloading network (10 MB)…");
+  const [
+    score,
+    setScore
+  ] =
+    useState({
+      human: 0,
+      machine: 0,
+      rounds: 0
+    });
 
-        session.current =
-          await ort.InferenceSession.create(
-            `${BASE}/model.onnx`,
-            {
-              executionProviders: ["wasm"],
-            }
+
+  const [
+    missed,
+    setMissed
+  ] =
+    useState({
+      human: 0,
+      machine: 0,
+      melanomas: 0
+    });
+
+
+  const session =
+    useRef(null);
+
+
+  const canvas =
+    useRef(
+      document.createElement(
+        "canvas"
+      )
+    );
+
+
+  const imageRef =
+    useRef(null);
+
+
+  const deck =
+    useRef([]);
+
+
+  /* ------------------------------------------------------------------------
+     DRAW A RANDOM IMAGE
+     ------------------------------------------------------------------------ */
+
+  const draw =
+    useCallback(
+      images => {
+
+        if (
+          !Array.isArray(images) ||
+          images.length === 0
+        ) {
+
+          throw new Error(
+            "pool.json loaded, but it contains no images."
           );
+        }
 
-        setStatus(null);
-        setCurrent(draw(poolData.images));
 
-      } catch (error) {
-        setStatus(`Could not start: ${error.message}`);
-      }
-    })();
-  }, []);
+        if (
+          deck.current.length === 0
+        ) {
 
-  const next = useCallback(() => {
-    setAnswer(null);
-    setCurrent(draw(pool.images));
-  }, [pool, draw]);
+          deck.current =
+            [...images];
 
-  const choose = useCallback(
-    async (choice) => {
-      if (!current || answer) return;
 
-      const truth = current.dx;
+          for (
+            let i =
+              deck.current.length - 1;
+            i > 0;
+            i--
+          ) {
 
-      const probabilities = await classify(
-        session.current,
-        imageRef.current,
-        spec,
-        canvas.current
-      );
+            const j =
+              Math.floor(
+                Math.random() *
+                (i + 1)
+              );
 
-      const machineChoice =
-        spec.classes[
-          probabilities.indexOf(
-            Math.max(...probabilities)
-          )
-        ];
 
-      const humanRight = choice === truth;
-      const machineRight = machineChoice === truth;
+            [
+              deck.current[i],
+              deck.current[j]
+            ] =
+            [
+              deck.current[j],
+              deck.current[i]
+            ];
+          }
+        }
 
-      setAnswer({
-        truth,
-        choice,
-        machineChoice,
-        probabilities,
-        humanRight,
-        machineRight
-      });
 
-      setScore((s) => ({
-        human: s.human + (humanRight ? 1 : 0),
-        machine: s.machine + (machineRight ? 1 : 0),
-        rounds: s.rounds + 1,
-      }));
+        return deck.current.pop();
+      },
+      []
+    );
 
-      if (truth === "mel") {
-        setMissed((m) => ({
-          human: m.human + (humanRight ? 0 : 1),
-          machine: m.machine + (machineRight ? 0 : 1),
-          melanomas: m.melanomas + 1,
-        }));
-      }
+
+  /* ------------------------------------------------------------------------
+     LOAD MODEL + JSON FILES
+     ------------------------------------------------------------------------ */
+
+  useEffect(
+    () => {
+
+      (
+        async () => {
+
+          try {
+
+            /*
+              Check several possible model locations.
+
+              Recommended:
+              demo/public/model/
+
+              Alternatives:
+              demo/model/
+              demo/public/models/
+              ../public/model/
+            */
+
+            const BASE_CANDIDATES = [
+              "./public/model",
+              "./model",
+              "./public/models",
+              "../public/model"
+            ];
+
+
+            let loadedBase =
+              null;
+
+
+            let labels =
+              null;
+
+
+            let poolData =
+              null;
+
+
+            for (
+              const candidate
+              of BASE_CANDIDATES
+            ) {
+
+              try {
+
+                const labelsResponse =
+                  await fetch(
+                    `${candidate}/labels.json`,
+                    {
+                      cache:
+                        "no-store"
+                    }
+                  );
+
+
+                const poolResponse =
+                  await fetch(
+                    `${candidate}/pool.json`,
+                    {
+                      cache:
+                        "no-store"
+                    }
+                  );
+
+
+                if (
+                  !labelsResponse.ok ||
+                  !poolResponse.ok
+                ) {
+                  continue;
+                }
+
+
+                const labelsText =
+                  await labelsResponse.text();
+
+
+                const poolText =
+                  await poolResponse.text();
+
+
+                /*
+                  GitHub Pages may return
+                  an HTML/XML error page.
+                */
+
+                if (
+                  labelsText
+                    .trim()
+                    .startsWith("<") ||
+                  poolText
+                    .trim()
+                    .startsWith("<")
+                ) {
+                  continue;
+                }
+
+
+                labels =
+                  JSON.parse(
+                    labelsText
+                  );
+
+
+                poolData =
+                  JSON.parse(
+                    poolText
+                  );
+
+
+                loadedBase =
+                  candidate;
+
+
+                break;
+
+              } catch (_) {
+
+                /*
+                  Try the next candidate.
+                */
+
+              }
+            }
+
+
+            if (
+              !loadedBase
+            ) {
+
+              throw new Error(
+                "Could not find labels.json and pool.json. " +
+                "They must be inside demo/public/model/ " +
+                "(recommended), demo/model/, or demo/public/models/."
+              );
+            }
+
+
+            BASE =
+              loadedBase;
+
+
+            setSpec(
+              labels
+            );
+
+
+            setPool(
+              poolData
+            );
+
+
+            setStatus(
+              "Downloading network (10 MB)…"
+            );
+
+
+            /*
+              Load the ONNX model.
+            */
+
+            try {
+
+              session.current =
+                await ort.InferenceSession.create(
+                  `${BASE}/model.onnx`,
+                  {
+                    executionProviders:
+                      ["wasm"]
+                  }
+                );
+
+            } catch (modelError) {
+
+              throw new Error(
+                "model.onnx could not be loaded. " +
+                "Check that demo/public/model/model.onnx exists. " +
+                `(${modelError.message})`
+              );
+            }
+
+
+            setStatus(null);
+
+
+            setCurrent(
+              draw(
+                poolData.images
+              )
+            );
+
+
+          } catch (error) {
+
+            setStatus(
+              `Could not start: ${error.message}`
+            );
+
+          }
+
+        }
+      )();
+
     },
-    [current, answer, spec]
+    []
   );
 
+
+  /* ------------------------------------------------------------------------
+     NEXT LESION
+     ------------------------------------------------------------------------ */
+
+  const next =
+    useCallback(
+      () => {
+
+        setAnswer(null);
+
+        setCurrent(
+          draw(
+            pool.images
+          )
+        );
+
+      },
+      [pool, draw]
+    );
+
+
+  /* ------------------------------------------------------------------------
+     USER CHOICE
+     ------------------------------------------------------------------------ */
+
+  const choose =
+    useCallback(
+      async choice => {
+
+        if (
+          !current ||
+          answer ||
+          !session.current
+        ) {
+          return;
+        }
+
+
+        const truth =
+          current.dx;
+
+
+        try {
+
+          const probabilities =
+            await classify(
+              session.current,
+              imageRef.current,
+              spec,
+              canvas.current
+            );
+
+
+          const machineChoice =
+            spec.classes[
+              probabilities.indexOf(
+                Math.max(
+                  ...probabilities
+                )
+              )
+            ];
+
+
+          const humanRight =
+            choice === truth;
+
+
+          const machineRight =
+            machineChoice === truth;
+
+
+          setAnswer({
+            truth,
+            choice,
+            machineChoice,
+            probabilities,
+            humanRight,
+            machineRight
+          });
+
+
+          setScore(
+            s => ({
+              human:
+                s.human +
+                (
+                  humanRight
+                    ? 1
+                    : 0
+                ),
+
+              machine:
+                s.machine +
+                (
+                  machineRight
+                    ? 1
+                    : 0
+                ),
+
+              rounds:
+                s.rounds + 1
+            })
+          );
+
+
+          if (
+            truth === "mel"
+          ) {
+
+            setMissed(
+              m => ({
+                human:
+                  m.human +
+                  (
+                    humanRight
+                      ? 0
+                      : 1
+                  ),
+
+                machine:
+                  m.machine +
+                  (
+                    machineRight
+                      ? 0
+                      : 1
+                  ),
+
+                melanomas:
+                  m.melanomas + 1
+              })
+            );
+          }
+
+
+        } catch (error) {
+
+          setStatus(
+            `Could not classify image: ${error.message}`
+          );
+
+        }
+
+      },
+      [
+        current,
+        answer,
+        spec
+      ]
+    );
+
+
+  /* ------------------------------------------------------------------------
+     LOADING / ERROR SCREEN
+     ------------------------------------------------------------------------ */
+
   if (status) {
+
     return h(
       "main",
       null,
+
       h(
         "p",
-        { className: "note" },
+        {
+          className:
+            "note"
+        },
         status
       )
     );
   }
+
+
+  /* ------------------------------------------------------------------------
+     IMAGE URL
+     ------------------------------------------------------------------------ */
 
   const imageUrl =
     current
       ? `${BASE}/images/${current.image_id}.jpg`
       : "";
 
+
+  /* ------------------------------------------------------------------------
+     PAGE
+     ------------------------------------------------------------------------ */
+
   return h(
     "main",
     null,
+
+
+    /* HEADER */
 
     h(
       "div",
       {
         style: {
-          textAlign: "center",
-          marginBottom: "2rem"
+          textAlign:
+            "center",
+
+          marginBottom:
+            "2rem"
         }
       },
+
 
       h(
         "h1",
         {
           style: {
-            fontFamily: "Times New Roman, serif",
-            fontSize: "2.8rem",
-            fontWeight: "800",
-            color: "#16181d",
-            margin: "0 0 .5rem",
-            letterSpacing: "-.02em",
-            lineHeight: "1.15"
+            fontFamily:
+              "Times New Roman, serif",
+
+            fontSize:
+              "2.8rem",
+
+            fontWeight:
+              "800",
+
+            color:
+              "#16181d",
+
+            margin:
+              "0 0 .5rem",
+
+            letterSpacing:
+              "-.02em",
+
+            lineHeight:
+              "1.15"
           }
         },
 
+
         "Can You Spot ",
+
 
         h(
           "span",
-          { style: { color: "#c62828" } },
+          {
+            style: {
+              color:
+                "#c62828"
+            }
+          },
           "Melanoma"
         ),
 
+
         " ?",
+
 
         h("br"),
 
+
         "Before ",
+
 
         h(
           "span",
-          { style: { color: "#2563eb" } },
+          {
+            style: {
+              color:
+                "#2563eb"
+            }
+          },
           "AI"
         ),
 
+
         " Does "
       ),
+
 
       h(
         "h2",
         {
           style: {
-            fontFamily: "Georgia, serif",
-            fontSize: "1.35rem",
-            fontWeight: "700",
-            color: "#16181d",
-            margin: "0 0 .75rem"
+            fontFamily:
+              "Georgia, serif",
+
+            fontSize:
+              "1.35rem",
+
+            fontWeight:
+              "700",
+
+            color:
+              "#16181d",
+
+            margin:
+              "0 0 .75rem"
           }
         },
         ""
       ),
 
+
       h(
         "p",
         {
-          className: "lede",
+          className:
+            "lede",
+
           style: {
-            margin: "0 auto"
+            margin:
+              "0 auto"
           }
         },
 
-        "one dermatoscopic image at a time , Melanoma or an ordinary mole
-        Make your call, and see how a neural network compares"
+        "One dermatoscopic image at a time: " +
+        "Melanoma or an ordinary mole. " +
+        "Make your call, and see how a neural network compares"
       )
     ),
 
+
+    /* BOARD */
+
     h(
       "div",
-      { className: "board" },
+      {
+        className:
+          "board"
+      },
+
+
+      /* LEFT CARD */
 
       h(
         "div",
-        { className: "card" },
+        {
+          className:
+            "card"
+        },
+
 
         h(
           "img",
           {
-            ref: imageRef,
-            className: "lesion",
-            src: imageUrl,
-            alt: "Dermatoscopic image of a skin lesion",
-            crossOrigin: "anonymous"
+            ref:
+              imageRef,
+
+            className:
+              "lesion",
+
+            src:
+              imageUrl,
+
+            alt:
+              "Dermatoscopic image of a skin lesion",
+
+            crossOrigin:
+              "anonymous"
           }
         ),
 
+
+        /* CHOICES */
+
         h(
           "div",
-          { className: "choices" },
+          {
+            className:
+              "choices"
+          },
+
 
           h(
             "button",
             {
-              onClick: () => choose("mel"),
-              disabled: !!answer
+              onClick:
+                () => choose("mel"),
+
+              disabled:
+                !!answer
             },
             "Melanoma"
           ),
 
+
           h(
             "button",
             {
-              onClick: () => choose("nv"),
-              disabled: !!answer
+              onClick:
+                () => choose("nv"),
+
+              disabled:
+                !!answer
             },
             "Mole"
           )
         ),
 
+
+        /* VERDICT */
+
         answer &&
           h(
             "div",
-            { className: "verdict" },
+            {
+              className:
+                "verdict"
+            },
+
 
             h(
               "h3",
               null,
+
               "It was ",
-              COMMON[answer.truth]
+
+              COMMON[
+                answer.truth
+              ]
             ),
+
 
             h(
               "div",
-              { className: "row" },
+              {
+                className:
+                  "row"
+              },
+
 
               h(
                 "span",
                 null,
+
                 "You said ",
-                COMMON[answer.choice]
+
+                COMMON[
+                  answer.choice
+                ]
               ),
+
 
               h(
                 "span",
                 {
-                  className: "right",
+                  className:
+                    "right",
+
                   "data-correct":
-                    String(answer.humanRight)
+                    String(
+                      answer.humanRight
+                    )
                 },
+
                 answer.humanRight
                   ? "correct"
                   : "wrong"
               )
             ),
 
+
             h(
               "div",
-              { className: "row" },
+              {
+                className:
+                  "row"
+              },
+
 
               h(
                 "span",
                 null,
 
                 "Machine said ",
-                COMMON[answer.machineChoice],
+
+                COMMON[
+                  answer.machineChoice
+                ],
 
                 " (",
+
                 Math.round(
                   100 *
                   Math.max(
                     ...answer.probabilities
                   )
                 ),
+
                 "% confident)"
               ),
+
 
               h(
                 "span",
                 {
-                  className: "right",
+                  className:
+                    "right",
+
                   "data-correct":
-                    String(answer.machineRight)
+                    String(
+                      answer.machineRight
+                    )
                 },
+
                 answer.machineRight
                   ? "correct"
                   : "wrong"
               )
             ),
 
+
             h(
               "button",
               {
-                onClick: next,
+                onClick:
+                  next,
+
                 style: {
-                  marginTop: ".85rem",
-                  width: "100%"
+                  marginTop:
+                    ".85rem",
+
+                  width:
+                    "100%"
                 }
               },
               "Next lesion"
@@ -761,86 +1479,118 @@ function App() {
           )
       ),
 
+
+      /* RIGHT CARD */
+
       h(
         "div",
-        { className: "card" },
+        {
+          className:
+            "card"
+        },
+
 
         h(
           Scoreboard,
           score
         ),
 
+
+        /* MELANOMA TALLY */
+
         missed.melanomas > 0 &&
+
           h(
             "div",
-            { className: "tally" },
+            {
+              className:
+                "tally"
+            },
 
-            `Of ${missed.melanomas} melanoma${
+
+            `Of ${
+              missed.melanomas
+            } melanoma${
               missed.melanomas === 1
                 ? ""
                 : "s"
             } shown so far, you missed `,
 
+
             h(
               "strong",
               null,
-              String(missed.human)
+              String(
+                missed.human
+              )
             ),
+
 
             " and the machine missed ",
 
+
             h(
               "strong",
               null,
-              String(missed.machine)
+              String(
+                missed.machine
+              )
             ),
+
 
             ".",
 
-            (missed.human > 0 ||
-              missed.machine > 0) &&
+
+            (
+              missed.human > 0 ||
+              missed.machine > 0
+            ) &&
 
               h(
                 "div",
                 {
                   style: {
-                    marginTop: ".4rem"
+                    marginTop:
+                      ".4rem"
                   }
                 },
 
-                "A missed melanoma is the error that matters: it is the one that " +
-                "gets sent home."
+                "A missed melanoma is the error that matters: " +
+                "it is the one that gets sent home."
               )
           ),
+
+
+        /* DATASET NOTE */
 
         h(
           "p",
           {
-            className: "note",
+            className:
+              "note",
+
             style: {
-              marginTop: "1rem"
+              marginTop:
+                "1rem"
             }
           },
 
-          "This Algorithm runs on 1113 known and defined dermatoscopic images from HAM Dataset. ",
-
-          h("strong", null, ""),
-
-          "   ",
-
-          h("strong", null, ""),
-
-          " ",
-
-          ""
+          "This Algorithm runs on 1113 known and defined " +
+          "dermatoscopic images from HAM Dataset. "
         )
       )
     ),
 
-    /* Limitation section */
+
+    /* LIMITATION */
+
     h(
       "div",
-      { className: "limitation" },
+      {
+        className:
+          "limitation"
+      },
+
 
       h(
         "h3",
@@ -848,10 +1598,20 @@ function App() {
         "Limitation"
       ),
 
-      "This is a teaching demonstration, not a diagnostic tool.
-Built from a public research dataset, the network misses roughly 1 in 4 melanomas and was trained without ethnicity or Fitzpatrick skin-type data. Models trained on one population mostly underperform on another.
-If you find a lesion concerning, —Please see a dermatologist."
+
+      "This is a teaching demonstration, not a diagnostic tool. " +
+
+      "Built from a public research dataset, the network misses roughly 1 in 4 melanomas " +
+
+      "and was trained without ethnicity or Fitzpatrick skin-type data. " +
+
+      "Models trained on one population mostly underperform on another. " +
+
+      "If you find a lesion concerning, —Please see a dermatologist."
     ),
+
+
+    /* FOOTER */
 
     h(
       "footer",
@@ -865,14 +1625,23 @@ If you find a lesion concerning, —Please see a dermatologist."
 
       "quantised to int8. Everything runs in your browser; nothing is uploaded."
     )
+
   );
 }
 
+
+/* --------------------------------------------------------------------------
+   START REACT
+   -------------------------------------------------------------------------- */
+
 createRoot(
-  document.getElementById("root")
+  document.getElementById(
+    "root"
+  )
 ).render(
   h(App)
 );
+
 </script>
 
 </body>
