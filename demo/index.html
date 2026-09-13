@@ -1623,12 +1623,38 @@ function App() {
         "If you find a lesion concerning, Please see a dermatologist."
       )
     ),
-       /* FOOTER */
+    
+        /* LIMITATION */
+
+    h(
+      "div",
+      {
+        className: "limitation"
+      },
+
+      h(
+        "h3",
+        null,
+        "Limitation"
+      ),
+
+      "This is a teaching demonstration, not a diagnostic tool. " +
+      "Built from a public research dataset, the network misses roughly 1 in 4 melanomas " +
+      "and was trained without ethnicity or Fitzpatrick skin-type data. " +
+      "Models trained on one population mostly underperform on another. ",
+
+      h(
+        "strong",
+        null,
+        "If you find a lesion concerning, —Please see a dermatologist."
+      )
+    ),
+
+    /* FOOTER */
 
     h(
       "footer",
       null,
-
       "A Quiz By, Zaima Choudhry MD "
     ),
 
@@ -1643,10 +1669,12 @@ function App() {
           lineHeight: "1.4"
         }
       },
-
       "Images: HAM10000 (Tschandl, Rosendahl & Kittler, 2018), drawn from the held-out validation split, so the network never trained on any of them. Model: ResNet-18 fine-tuned on melanoma versus nevus, exported to ONNX and quantised to int8. Everything runs in your browser; nothing is uploaded."
     )
 
+  );
+}
+  
 /* --------------------------------------------------------------------------
    START REACT
    -------------------------------------------------------------------------- */
