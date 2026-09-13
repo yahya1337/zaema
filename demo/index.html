@@ -1255,7 +1255,7 @@ function App() {
       ),
 
 
-      h(
+         h(
         "p",
         {
           className:
@@ -1267,9 +1267,11 @@ function App() {
           }
         },
 
-        "One dermatoscopic image at a time: " +
-        "Melanoma or an ordinary mole. " +
-        "Make your call, and see how a neural network compares"
+        "One dermatoscopic image at a time: ",
+        h("strong", null, "Melanoma"),
+        " or an ordinary ",
+        h("strong", null, "mole"),
+        ". Make your call, and see how a neural network compares"
       )
     ),
 
