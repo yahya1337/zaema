@@ -1261,21 +1261,23 @@ function App() {
       ),
 
 
- h(
+h(
   "p",
   {
-    className: "lede",
-    style: {
-      margin: "-0.3rem auto 0",
-      color: "#000000"
-    }
+    className: "note"
   },
-  "One dermatoscopic image at a time: ",
-  h("strong", { style: { fontWeight: 600 } }, "Melanoma or an ordinary mole"),
-  ". Make your call, and see how a neural network compares"
+
+  "Across its full held-out set of 1,505 lesions the network scores ",
+
+  h("strong", null, "0.84"),
+
+  " balanced accuracy, but it misses ",
+
+  h("strong", null, "36 of 154 melanomas"),
+
+  ", roughly one in four. Overall accuracy of 90% hides that, because most lesions are moles."
 ),
-      
-    /* BOARD */
+      /* BOARD */
 
     h(
       "div",
