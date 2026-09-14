@@ -198,10 +198,10 @@ footer {
   }
 
  .limitation {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding: .45rem .75rem;
   border: 1px solid #fecaca;
-  background: #fef2f2;
+  background: #ffe8f5;
   border-radius: .5rem;
   text-align: left;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1569,22 +1569,21 @@ function App() {
         /* DATASET NOTE */
 
         h(
-          "p",
-          {
-            className:
-              "note",
+  "p",
+  {
+    className: "note"
+  },
 
-            style: {
-              marginTop:
-                "1rem"
-            }
-          },
+  "Across its full held-out set of 1,505 lesions the network scores ",
 
-          "Across its full held-out set of 1,505 lesions the network scores 0.84 balanced accuracy, but it misses 36 of 154 melanomas, roughly one in four. Overall accuracy of 90% hides that, because most lesions are moles." +
-          " "
-        )
-      )
-    ),
+  h("strong", null, "0.84"),
+
+  " balanced accuracy, but it misses ",
+
+  h("strong", null, "36 of 154 melanomas"),
+
+  ", roughly one in four. Overall accuracy of 90% hides that, because most lesions are moles."
+),
 
 
 /* LIMITATION */
@@ -1622,7 +1621,7 @@ h(
       fontFamily: "Times New Roman, serif"
     }
   },
-  "An endeavour by Zaima Chaudhry, MD "
+  "-An endeavour by Zaima Chaudhry, MD "
 ),
     h(
       "p",
