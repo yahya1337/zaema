@@ -87,6 +87,17 @@ h1 {
   letter-spacing: 0;
   text-align: center;
 }
+.lede-sans {
+  color: #16181d;
+  margin: 0 auto 1.5rem;
+  max-width: 44rem;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: center;
+}
   .board {
   display: grid;
   grid-template-columns: minmax(0,1.15fr) minmax(0,1fr);
@@ -1275,6 +1286,18 @@ h(
         ". Make your call, and see how a neural network compares"
       )
     ),
+    h(
+  "p",
+  {
+    className: "lede",
+    style: { margin: "-0.2rem auto 1.5rem" }
+  },
+  "One dermatoscopic image at a time: ",
+  h("strong", null, "Melanoma"),
+  " or an ordinary ",
+  h("strong", null, "mole"),
+  ". Make your call, and see how a neural network compares"
+),
       /* BOARD */
 
     h(
