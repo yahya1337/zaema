@@ -1212,41 +1212,45 @@ h(
   h("br"),
 
   h(
+  "span",
+  {
+    style: {
+      fontSize:
+        "1.6rem",
+
+      fontWeight:
+        "500"
+    }
+  },
+
+  "Can you spot ",
+
+  h(
     "span",
     {
       style: {
-        fontSize:
-          "1.6rem",
-
-        fontWeight:
-          "500"
+        color:
+          "#c62828"
       }
     },
+    "Melanoma"
+  ),
 
-    h(
-      "span",
-      {
-        style: {
-          color:
-            "#c62828"
-        }
-      },
-      "Melanoma"
-    ),
+  " Before ",
 
-    " Detection: Human vs. ",
+  h(
+    "span",
+    {
+      style: {
+        color:
+          "#2563eb"
+      }
+    },
+    "AI"
+  ),
 
-    h(
-      "span",
-      {
-        style: {
-          color:
-            "#2563eb"
-        }
-      },
-      "AI"
-    )
-  )
+  " Does"
+)
 ),
       h(
         "h2",
