@@ -66,8 +66,7 @@ body {
 main {
   max-width: 55rem;
   margin: 0 auto;
-  padding: .6rem 1.5rem 0;
-}
+   padding: .6rem 1.5rem 4rem;
 
 }
 
@@ -1273,6 +1272,19 @@ h(
       ),
 
 
+h(
+  "p",
+  {
+    className: "lede",
+   style: { margin: "-0.2rem auto 1.5rem" }
+  },
+        "One dermatoscopic image at a time: ",
+        h("strong", null, "Melanoma"),
+        " or an ordinary ",
+        h("strong", null, "mole"),
+        ". Make your call, and see how a neural network compares"
+      )
+    ),
     h(
   "p",
   {
@@ -1672,4 +1684,4 @@ createRoot(
 </script>
 
 </body>
-</html>
+</html> 
